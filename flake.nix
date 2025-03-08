@@ -2,7 +2,8 @@
   description = "Hello world flake using uv2nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:sepiabrown/nixpkgs";
+    # nixpkgs.url = "github:ConnorBaker/nixpkgs/feat/cudaPackages-fixed-output-derivations";
 
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
@@ -59,19 +60,59 @@
       # This is an additional overlay implementing build fixups.
       # See:
       # - https://pyproject-nix.github.io/uv2nix/FAQ.html
+      cudaLibs = [
+        pkgs.cudaPackages.cudnn
+        pkgs.cudaPackages.nccl
+        pkgs.cudaPackages.cutensor
+        pkgs.cudaPackages.cusparselt
+        pkgs.cudaPackages.libcublas
+        pkgs.cudaPackages.libcusparse
+        pkgs.cudaPackages.libcusolver
+        pkgs.cudaPackages.libcurand
+        pkgs.cudaPackages.cuda_gdb
+        pkgs.cudaPackages.cuda_nvcc
+        pkgs.cudaPackages.cuda_cudart
+        pkgs.cudaPackages.cudatoolkit
+        pkgs.cowsay
+      ];
+
+      cudaLDLibraryPath = pkgs.lib.makeLibraryPath cudaLibs;
+
       pyprojectOverrides = final: prev: {
         # Implement build fixups here.
         # Note that uv2nix is _not_ using Nixpkgs buildPythonPackage.
         # It's using https://pyproject-nix.github.io/pyproject.nix/build.html
-        torch = hacks.nixpkgsPrebuilt {
-          from = pkgs.python312Packages.torchWithCuda;
-          prev = prev.torch.overrideAttrs(old: {
-            passthru = old.passthru // {
-              dependencies = lib.filterAttrs (name: _: ! lib.hasPrefix "nvidia" name) old.passthru.dependencies;
-            };
-          });
-        };
+        # torch = hacks.nixpkgsPrebuilt {
+        #   from = pkgs.python312Packages.torchWithCuda;
+        #   prev = prev.torch.overrideAttrs(old: {
+        #     passthru = old.passthru // {
+        #       dependencies = lib.filterAttrs (name: _: ! lib.hasPrefix "nvidia" name) old.passthru.dependencies;
+        #     };
+        #   });
+        # };
+        torch = prev.torch.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ cudaLibs;
+          # LD_LIBRARY_PATH = cudaLDLibraryPath;
+          # postFixup = ''
+          #   ls -al $out/lib/python3.12/site-packages/torch/lib
+          #   patchelf $out/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so --add-needed libcublasLt.so
+          # '';
+        });
+        torchvision = prev.torchvision.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or [ ]) ++ cudaLibs;
+          # postFixup = ''
+          #   patchelf $out/lib/libtorch_cuda.so --add-needed libcublasLt.so
+          # '';
+          # LD_LIBRARY_PATH = cudaLDLibraryPath;
+        });
+        nvidia-cusolver-cu12 = prev.nvidia-cusolver-cu12.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or []) ++ cudaLibs;
+        });
+        nvidia-cusparse-cu12 = prev.nvidia-cusparse-cu12.overrideAttrs (old: {
+          buildInputs = (old.buildInputs or []) ++ cudaLibs;
+        });
       };
+
 
       # This example is only using x86_64-linux
       # pkgs = nixpkgs.legacyPackages.x86_64-linux;
@@ -100,6 +141,7 @@
     in
     {
       test = lib.makeLibraryPath pkgs.pythonManylinuxPackages.manylinux1;
+      test1 = pkgs.cudaPackages;
       # Package a virtual environment as our main application.
       #
       # Enable no optional dependencies for production build.
