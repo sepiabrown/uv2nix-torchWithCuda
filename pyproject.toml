@@ -1,17 +1,25 @@
 [project]
-name = "hello-world"
+name = "denoising_diffusion_pytorch"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "urllib3>=2.2.3",
-    "torch>=2.4.1",
-    "numpy"
+    "accelerate",
+    "einops",
+    "ema-pytorch>=0.4.2",
+    "numpy",
+    "pillow",
+    "pytorch-fid",
+    "scipy",
+    "torch>=2.0",
+    "torchvision",
+    "tqdm"
 ]
 
 [project.scripts]
-hello = "hello_world:hello"
+example = "denoising_diffusion_pytorch.classifier_free_guidance:main"
 
 [build-system]
 requires = ["hatchling"]

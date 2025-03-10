@@ -99,11 +99,11 @@
           # '';
         });
         torchvision = prev.torchvision.overrideAttrs (old: {
-          buildInputs = (old.buildInputs or [ ]) ++ cudaLibs;
-          # postFixup = ''
-          #   patchelf $out/lib/libtorch_cuda.so --add-needed libcublasLt.so
-          # '';
-          # LD_LIBRARY_PATH = cudaLDLibraryPath;
+          buildInputs = (old.buildInputs or [ ]) ++ cudaLibs;# ++ [ final.torch ];
+
+          postFixup = ''
+            addAutoPatchelfSearchPath "${final.torch}"
+          '';
         });
         nvidia-cusolver-cu12 = prev.nvidia-cusolver-cu12.overrideAttrs (old: {
           buildInputs = (old.buildInputs or []) ++ cudaLibs;
@@ -146,14 +146,19 @@
       #
       # Enable no optional dependencies for production build.
       packages.x86_64-linux.default = pythonSet.mkVirtualEnv "hello-world-env" (workspace.deps.default // {
-        torch = [ ];
+        # torch = [ ];
       });
 
       # Make hello runnable with `nix run`
       apps.x86_64-linux = {
-        default = {
+        default = self.apps.x86_64-linux.example;
+        hello = {
           type = "app";
           program = "${self.packages.x86_64-linux.default}/bin/hello";
+        };
+        example = {
+          type = "app";
+          program = "${self.packages.x86_64-linux.default}/bin/example";
         };
       };
 
