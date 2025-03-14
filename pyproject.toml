@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-example = "denoising_diffusion_pytorch.classifier_free_guidance:main"
+example = "denoising_diffusion_pytorch.train:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -140,22 +140,20 @@
 
     in
     {
-      test = lib.makeLibraryPath pkgs.pythonManylinuxPackages.manylinux1;
-      test1 = pkgs.cudaPackages;
       # Package a virtual environment as our main application.
       #
       # Enable no optional dependencies for production build.
-      packages.x86_64-linux.default = pythonSet.mkVirtualEnv "hello-world-env" (workspace.deps.default // {
+      packages.x86_64-linux.default = pythonSet.mkVirtualEnv "denoising_diffusion_pytorch-env" (workspace.deps.default // {
         # torch = [ ];
       });
 
       # Make hello runnable with `nix run`
       apps.x86_64-linux = {
         default = self.apps.x86_64-linux.example;
-        hello = {
-          type = "app";
-          program = "${self.packages.x86_64-linux.default}/bin/hello";
-        };
+        # hello = {
+        #   type = "app";
+        #   program = "${self.packages.x86_64-linux.default}/bin/hello";
+        # };
         example = {
           type = "app";
           program = "${self.packages.x86_64-linux.default}/bin/example";
@@ -183,7 +181,7 @@
             // lib.optionalAttrs pkgs.stdenv.isLinux {
               # Python libraries often load native shared objects using dlopen(3).
               # Setting LD_LIBRARY_PATH makes the dynamic library loader aware of libraries without using RPATH for lookup.
-              LD_LIBRARY_PATH = lib.makeLibraryPath pkgs.pythonManylinuxPackages.manylinux1;
+              LD_LIBRARY_PATH = lib.makeLibraryPath (__filter (p: p.pname != "glibc") pkgs.pythonManylinuxPackages.manylinux1);
             };
           shellHook = ''
             unset PYTHONPATH
@@ -213,7 +211,7 @@
 
                 # Apply fixups for building an editable package of your workspace packages
                 (final: prev: {
-                  hello-world = prev.hello-world.overrideAttrs (old: {
+                  denoising-diffusion-pytorch = prev.denoising-diffusion-pytorch.overrideAttrs (old: {
                     # It's a good idea to filter the sources going into an editable build
                     # so the editable package doesn't have to be rebuilt on every change.
                     src = lib.fileset.toSource {
@@ -221,7 +219,7 @@
                       fileset = lib.fileset.unions [
                         (old.src + "/pyproject.toml")
                         (old.src + "/README.md")
-                        (old.src + "/src/hello_world/__init__.py")
+                        (old.src + "/src/denoising_diffusion_pytorch/__init__.py")
                       ];
                     };
 
@@ -245,7 +243,7 @@
             # Build virtual environment, with local packages being editable.
             #
             # Enable all optional dependencies for development.
-            virtualenv = editablePythonSet.mkVirtualEnv "hello-world-dev-env" workspace.deps.all;
+            virtualenv = editablePythonSet.mkVirtualEnv "denoising_diffusion_pytorch-dev-env" workspace.deps.all;
 
           in
           pkgs.mkShell {
