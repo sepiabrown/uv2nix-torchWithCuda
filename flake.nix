@@ -156,7 +156,16 @@
         # };
         example = {
           type = "app";
-          program = "${self.packages.x86_64-linux.default}/bin/example";
+          program = "${pkgs.writeShellApplication {
+            name = "example-wrapper";
+            runtimeInputs = [ self.packages.x86_64-linux.default ];
+            text = ''
+              ${./data/get_cifar10.sh}
+              export NCCL_P2P_DISABLE="1" NCCL_IB_DISABLE="1"
+              exec example "$@"
+            '';
+            inheritPath = true;
+          }}/bin/example-wrapper";
         };
       };
 
@@ -268,7 +277,7 @@
               unset PYTHONPATH
 
               # Get repository root using git. This is expanded at runtime by the editable `.pth` machinery.
-              export REPO_ROOT=$(git rev-parse --show-toplevel)
+              export REPO_ROOT=$(git rev-parse --show-toplevel)  NCCL_P2P_DISABLE="1" NCCL_IB_DISABLE="1"
             '';
           };
       };
