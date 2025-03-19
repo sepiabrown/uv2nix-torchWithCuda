@@ -1,7 +1,7 @@
 [project]
 name = "denoising_diffusion_pytorch"
 version = "0.1.0"
-description = "Add your description here"
+description = "denoising_diffusion_pytorch nixified"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-example = "denoising_diffusion_pytorch.train:main"
+train_script = "denoising_diffusion_pytorch.train:main"
 
 [build-system]
 requires = ["hatchling"]
